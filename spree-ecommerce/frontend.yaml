@@ -32,7 +32,7 @@ spec:
             secretKeyRef:
               key: pw
               name: db-password
-        image: salomaosan/storefront::v0.1
+        image: salomaosan/storefront:v0.1
         imagePullPolicy: Always
         name: ecommerce-spree-observability
         ports:
