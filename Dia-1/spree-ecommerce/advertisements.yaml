@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecommerce
+    service: advertisements
+  name: advertisements
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ecommerce
+        service: advertisements
+    spec:
+      containers:
+      - image: salomaosan/ads:v0.1
+        name: advertisements
+        env:
+          - name: FLASK_DEBUG
+            value: "1"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: pw
+                name: db-password
+          - name: POSTGRES_USER
+            value: "user"
+          - name: POSTGRES_HOST
+            value: "db"
+        ports:
+        - containerPort: 5002
+        resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ecommerce
+    service: advertisements
+  name: advertisements
+spec:
+  ports:
+  - port: 5002
+    protocol: TCP
+    targetPort: 5002
+  selector:
+    app: ecommerce
+    service: advertisements
+status:
