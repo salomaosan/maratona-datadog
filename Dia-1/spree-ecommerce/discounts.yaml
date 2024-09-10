@@ -19,7 +19,7 @@ spec:
         service: discounts
     spec:
       containers:
-      - image: salomaosan/discounts:v0.1
+      - image: salomaosan/discounts:v0.1-adm
         name: discounts
         env:
           - name: FLASK_DEBUG
