@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecommerce
+    service: discounts
+    tags.datadoghq.com/env: 'maratona'
+    tags.datadoghq.com/service: 'discounts'
+    tags.datadoghq.com/version: '1.0'
+  name: discounts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ecommerce
+        service: discounts
+        tags.datadoghq.com/env: 'maratona'
+        tags.datadoghq.com/service: 'discounts'
+        tags.datadoghq.com/version: '1.0'
+        admission.datadoghq.com/enabled: "true"
+      annotations:
+        admission.datadoghq.com/python-lib.version: v2.12.1
+        ad.datadoghq.com/discounts.logs: '[{"source": "python", "service": "discounts"}]'
+    spec:
+      containers:
+      - image: salomaosan/discounts:v0.1-adm
+        name: discounts
+        env:
+          - name: DD_LOGS_INJECTION
+            value: "true"
+          - name: FLASK_DEBUG
+            value: "1"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: pw
+                name: db-password
+          - name: POSTGRES_USER
+            value: "user"
+          - name: POSTGRES_HOST
+            value: "db"
+        ports:
+        - containerPort: 5001
+        resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ecommerce
+    service: discounts
+  name: discounts
+spec:
+  ports:
+  - port: 5001
+    protocol: TCP
+    targetPort: 5001
+  selector:
+    app: ecommerce
+    service: discounts
+  sessionAffinity: None
+  type: ClusterIP

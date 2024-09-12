@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecommerce
+    service: advertisements
+    tags.datadoghq.com/env: 'maratona'
+    tags.datadoghq.com/service: 'advertisements'
+    tags.datadoghq.com/version: '1.0'
+  name: advertisements
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ecommerce
+        service: advertisements
+        tags.datadoghq.com/env: 'maratona'
+        tags.datadoghq.com/service: 'advertisements'
+        tags.datadoghq.com/version: '1.0'
+      annotations:
+        ad.datadoghq.com/advertisements.logs: '[{"source": "python", "service": "advertisements"}]'
+    spec:
+      volumes:
+      - hostPath:
+          path: /var/run/datadog/
+        name: apmsocketpath
+      containers:
+      - image: salomaosan/ads:v0.1
+        name: advertisements
+        command: ["ddtrace-run"]
+        args: ["flask", "run", "--port=5002", "--host=0.0.0.0"]
+        volumeMounts:
+          - name: apmsocketpath
+            mountPath: /var/run/datadog
+        env:
+          - name: DD_ENV
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['tags.datadoghq.com/env']
+          - name: DD_SERVICE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['tags.datadoghq.com/service']
+          - name: DD_VERSION
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['tags.datadoghq.com/version']
+          - name: DD_LOGS_INJECTION
+            value: "true"
+          - name: FLASK_DEBUG
+            value: "1"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: pw
+                name: db-password
+          - name: POSTGRES_USER
+            value: "user"
+          - name: POSTGRES_HOST
+            value: "db"
+        ports:
+        - containerPort: 5002
+        resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ecommerce
+    service: advertisements
+  name: advertisements
+spec:
+  ports:
+  - port: 5002
+    protocol: TCP
+    targetPort: 5002
+  selector:
+    app: ecommerce
+    service: advertisements
+status:

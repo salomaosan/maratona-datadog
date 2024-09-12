@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecommerce
+    service: frontend
+    tags.datadoghq.com/env: 'maratona'
+    tags.datadoghq.com/service: 'store-frontend'
+    tags.datadoghq.com/version: '1.0'
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce
+      service: frontend
+  strategy: 
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ecommerce
+        service: frontend
+        tags.datadoghq.com/env: 'maratona'
+        tags.datadoghq.com/service: 'store-frontend'
+        tags.datadoghq.com/version: '1.0'
+      annotations:
+        ad.datadoghq.com/storefront.logs: '[{"source": "ruby", "service": "store-frontend"}]'
+    spec:
+      containers:
+      - args:
+        - docker-entrypoint.sh
+        command:
+        - sh
+        env:
+        - name: DD_CLIENT_TOKEN
+          value: puba80777256cc16c6438638efca727aecd
+        - name: DD_APPLICATION_ID
+          value: 074e972a-1914-47fb-a3aa-18bc845113e3
+        - name: DD_LOGS_INJECTION
+          value: "true"
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+        - name: DD_RUNTIME_METRICS_ENABLED
+          value: "true"
+        - name: DB_USERNAME
+          value: user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: pw
+              name: db-password
+        image: salomaosan/storefront:v0.9-rum
+        imagePullPolicy: Always
+        name: storefront
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 700Mi
+          limits: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: frontend
+    app: ecommerce
+  name: frontend
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 3000
+    name: http
+  selector:
+    service: frontend
+    app: ecommerce
+  type: ClusterIP
